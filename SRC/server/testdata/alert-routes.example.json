@@ -1,0 +1,18 @@
+{
+  "dashboard_url": "https://cve.example.com",
+  "on_resolved": true,
+  "channels": {
+    "pager":  {"type": "webhook", "url": "https://events.pagerduty.com/integration/XXXX/enqueue"},
+    "slack":  {"type": "webhook", "url": "https://hooks.slack.com/services/XXXX"},
+    "secops": {"type": "smtp", "host": "smtp.example.com", "port": "587",
+               "from": "cve@example.com", "to": ["secops@example.com"],
+               "user": "cve@example.com", "pass": "CHANGE_ME"}
+  },
+  "rules": [
+    {"kev": true, "channels": ["pager", "secops"]},
+    {"min_epss": 0.5, "channels": ["pager"]},
+    {"min_severity": "CRITICAL", "channels": ["pager", "secops"]},
+    {"min_severity": "HIGH", "running": true, "channels": ["slack"]},
+    {"min_severity": "HIGH", "channels": ["slack"]}
+  ]
+}

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+case "$1" in
+  remove|deconfigure)
+    if [ -d /run/systemd/system ]; then
+      systemctl stop cobrart.service cobrart-refresh.timer cobrart-refresh.service || true
+      systemctl disable cobrart.service cobrart-refresh.timer || true
+    fi
+    ;;
+esac
+exit 0

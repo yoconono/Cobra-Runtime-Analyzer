@@ -1,0 +1,37 @@
+# Build a .deb with:  nfpm pkg --packager deb --target ../build/
+# (install nfpm: https://nfpm.goreleaser.com)
+name: cobraagent
+arch: ${GOARCH}
+platform: linux
+version: ${VERSION}
+section: admin
+priority: optional
+maintainer: Your Name <you@example.com>
+description: |
+  Low-footprint runtime CVE analysis agent (Cobra).
+  Reports installed and running package inventory to a CVE Fleet server over
+  HTTPS. Vulnerability matching is performed server-side.
+vendor: yourorg
+homepage: https://github.com/yourorg/cve-fleet
+license: Apache-2.0
+
+depends:
+  - dpkg
+  - adduser
+
+contents:
+  - src: ../build/cobraagent
+    dst: /usr/bin/cobraagent
+    file_info:
+      mode: 0755
+  - src: ./config.example.conf
+    dst: /etc/cobraagent/config.conf
+    type: config|noreplace
+    file_info:
+      mode: 0640
+  - src: ./cobraagent.service
+    dst: /lib/systemd/system/cobraagent.service
+
+scripts:
+  postinstall: ./scripts/postinst
+  preremove: ./scripts/prerm

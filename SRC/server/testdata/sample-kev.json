@@ -1,0 +1,9 @@
+{
+  "title": "CISA Known Exploited Vulnerabilities Catalog",
+  "catalogVersion": "2025.08.20",
+  "count": 2,
+  "vulnerabilities": [
+    {"cveID":"CVE-2025-DEMO-0004","vendorProject":"Debian","product":"dash","vulnerabilityName":"dash demo","dateAdded":"2025-08-01","dueDate":"2025-08-22","knownRansomwareCampaignUse":"Known","shortDescription":"demo"},
+    {"cveID":"CVE-2025-DEMO-0001","vendorProject":"OpenSSL","product":"openssl","vulnerabilityName":"openssl demo","dateAdded":"2025-02-05","dueDate":"2025-02-26","knownRansomwareCampaignUse":"Unknown","shortDescription":"demo"}
+  ]
+}
