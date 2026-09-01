@@ -1,0 +1,22 @@
+# /lib/systemd/system/cobrart-refresh.service — one-shot feed refresh (run by the timer).
+[Unit]
+Description=Cobra feed refresh (tracker + NVD/OSV + KEV + EPSS)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=cobrart
+Group=cobrart
+Environment=NVD_API_KEY=
+ExecStart=/usr/bin/cobrart refresh --config /etc/cobrart/cobrart.conf --source both
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/etc/cobrart
+StateDirectory=cobrart
+ReadWritePaths=/var/lib/cobrart
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM

@@ -1,0 +1,34 @@
+# /lib/systemd/system/cobrart.service — Cobra CVE server (API + dashboard).
+[Unit]
+Description=Cobra CVE server
+Documentation=https://github.com/yourorg/cve-fleet
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=cobrart
+Group=cobrart
+ExecStart=/usr/bin/cobrart serve --config /etc/cobrart/cobrart.conf
+Restart=on-failure
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+StateDirectory=cobrart
+ReadWritePaths=/var/lib/cobrart
+ReadOnlyPaths=/etc/cobrart
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

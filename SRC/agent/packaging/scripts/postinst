@@ -1,0 +1,49 @@
+#!/bin/sh
+set -e
+
+CFGDIR=/etc/cobraagent
+CFG="$CFGDIR/cobraagent.conf"
+TMPL="$CFGDIR/cobraagent.conf.template"
+LEGACY="$CFGDIR/config.conf"
+
+case "$1" in
+  configure)
+    # The service runs as root (see cobraagent.service), so no dedicated user is
+    # created and all state/config is owned by root.
+    mkdir -p /var/lib/cobraagent "$CFGDIR"
+    chown root:root /var/lib/cobraagent
+    chmod 0700 /var/lib/cobraagent
+
+    # Create the live config from the template on first install ONLY. An existing
+    # config is never overwritten (upgrades keep your settings, no dpkg prompt,
+    # because the live file is not a conffile). Migrate the pre-0.1.3 name.
+    if [ ! -f "$CFG" ]; then
+      if [ -f "$LEGACY" ]; then
+        mv "$LEGACY" "$CFG"
+        echo "cobraagent: migrated $LEGACY -> $CFG"
+      elif [ -f "$TMPL" ]; then
+        cp "$TMPL" "$CFG"
+      fi
+    fi
+    chown root:root "$CFGDIR" 2>/dev/null || true
+    chmod 0750 "$CFGDIR" 2>/dev/null || true
+    [ -f "$TMPL" ] && { chown root:root "$TMPL"; chmod 0640 "$TMPL"; }
+    [ -f "$CFG" ]  && { chown root:root "$CFG";  chmod 0640 "$CFG"; }
+
+    if [ -d /run/systemd/system ]; then
+      systemctl daemon-reload || true
+      systemctl enable cobraagent.service || true
+    fi
+
+    if ! grep -Eq '^[[:space:]]*enrollment_token[[:space:]]*=[[:space:]]*[^[:space:]]' "$CFG" 2>/dev/null; then
+      echo "cobraagent installed (runs as root)."
+      echo "  1. Edit $CFG (set server_url, enrollment_token, and any tags)."
+      echo "  2. systemctl start cobraagent"
+      echo "  (A sample is available at $TMPL.)"
+    else
+      [ -d /run/systemd/system ] && { systemctl restart cobraagent.service || true; }
+    fi
+    ;;
+esac
+
+exit 0

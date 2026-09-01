@@ -1,0 +1,32 @@
+{
+  "6800-1": {
+    "id": "6800-1",
+    "title": "OpenSSL vulnerabilities",
+    "description": "Several security issues were fixed in OpenSSL.",
+    "cves": ["CVE-2025-DEMO-0001", "CVE-2025-DEMO-9999"],
+    "releases": {
+      "noble": {
+        "sources": {
+          "openssl": {"version": "3.0.13-0ubuntu3.10", "description": "Secure Sockets Layer toolkit"}
+        },
+        "binaries": {"libssl3t64": {"version": "3.0.13-0ubuntu3.10"}}
+      },
+      "jammy": {
+        "sources": {
+          "openssl": {"version": "3.0.2-0ubuntu1.16", "description": "SSL toolkit"}
+        }
+      }
+    }
+  },
+  "6801-1": {
+    "id": "6801-1",
+    "title": "curl vulnerability",
+    "description": "A security issue was fixed in curl.",
+    "cves": ["CVE-2025-DEMO-CURL"],
+    "releases": {
+      "noble": {
+        "sources": {"curl": {"version": "8.5.0-2ubuntu10.1"}}
+      }
+    }
+  }
+}

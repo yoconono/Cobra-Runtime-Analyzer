@@ -1,0 +1,69 @@
+# Cobra CVE server configuration (/etc/cobrart/cobrart.conf)
+# Read by `cobra serve --config`. Command-line flags override these; these
+# override CVE_* environment variables and built-in defaults.
+# Syntax: key = value   (keys may use - or _;  # starts a comment)
+# Keep this file mode 0640 root:cobra — it holds credentials.
+
+# --- Storage ---
+store = mariadb
+# MariaDB DSN (go-sql-driver): user:pass@tcp(host:3306)/db?params
+# For Postgres: postgres://user:pass@host:5432/cobra?sslmode=disable
+dsn   = cobra:CHANGE_ME@tcp(127.0.0.1:3306)/cobra?parseTime=true&loc=UTC&charset=utf8mb4
+
+# --- Listener / TLS (agents require HTTPS) ---
+addr     = 0.0.0.0:8443
+tls_cert = /etc/cobrart/tls/cert.pem
+tls_key  = /etc/cobrart/tls/key.pem
+
+# --- Enrollment + dashboard auth ---
+enroll_token = CHANGE_ME
+dash_user    = admin
+dash_pass    = CHANGE_ME
+dashboard_url = https://cve.example.com
+
+# --- Session cookies ---
+# Stable secret so dashboard logins survive restarts / work across instances.
+# Generate: head -c 32 /dev/urandom | base64
+session_key = CHANGE-ME-to-a-long-random-secret
+
+# --- Feeds loaded at startup (optional; refresh timer keeps them current) ---
+distro = all                   # debian | ubuntu | all  (all = debian + ubuntu; Red Hat loads via redhat_csaf below)
+tracker_url = https://security-tracker.debian.org/tracker/data/json
+# ubuntu_usn_url = https://usn.ubuntu.com/usn-db/database.json.bz2
+# OSV language-package data (for pip/npm/Go dependency matching). Two ways to
+# supply it, both ingested at startup AND on each refresh, like the tracker:
+#  (a) auto-download from the OSV.dev mirror (no local file needed):
+osv_download    = true
+osv_ecosystems  = Go,PyPI,npm,crates.io
+# osv_url       = https://osv-vulnerabilities.storage.googleapis.com
+#  (b) OR load a local index file you generate yourself (takes precedence):
+# osv_index_file = /var/lib/cobrart/osv-index.json
+# symbols_file   = /var/lib/cobrart/cve-symbols.json
+
+# --- Background refresh (keeps debian_tracker + the cve table current) ---
+# The running server refreshes everything on this schedule, in the background:
+#   * debian_tracker  (Debian + Ubuntu security data)
+#   * the OSV index    (language-package advisories)
+#   * the cve table    (NVD/OSV severity enrichment + CISA KEV + FIRST EPSS)
+refresh_hours  = 6            # hours between refreshes (0 = disabled)
+enrich_source  = both         # nvd | osv | both | none  (NVD is slow without a key)
+# nvd_api_key  = CHANGE_ME    # raises the NVD rate limit dramatically
+# skip_kev     = false
+# skip_epss    = false
+
+# --- Alerting (choose flag-based OR routes file) ---
+alert_min_severity = HIGH
+alert_on_resolved  = true
+# alert_routes = /etc/cobrart/alert-routes.json       (optional; omit to use the alert_* flags)
+
+# Note: refresh-only settings (nvd-api-key, source) are NOT valid here; the
+# refresh timer passes those on its command line / via NVD_API_KEY.
+
+# --- Red Hat family support (RHEL/CentOS/Rocky/Alma/Oracle/Amazon) ---
+# Red Hat publishes CSAF/VEX security data. Point one of these at the corpus and
+# it is merged into the tracker at startup and on each refresh; RHEL hosts are
+# then matched with rpm (EVR) version comparison. Red Hat ships the archive as
+# .tar.zst — decompress to .tar/.tar.gz or an extracted directory (zstd archives
+# are not read directly).
+redhat_csaf = /var/lib/cobrart/redhat-csaf           # .json file, directory, or .tar/.tar.gz of Red Hat CSAF/VEX; skipped if absent
+# redhat_url  = https://example.internal/redhat-csaf-latest.tar.gz

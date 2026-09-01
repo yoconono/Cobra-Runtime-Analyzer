@@ -1,0 +1,83 @@
+[Unit]
+Description=Cobra runtime analysis agent
+Documentation=https://github.com/yourorg/cve-fleet
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cobraagent --config /etc/cobraagent/cobraagent.conf
+Restart=on-failure
+RestartSec=30s
+
+# --- Go runtime footprint (minimal-footprint defaults) ---
+# GOMAXPROCS=1 keeps the agent to one core's worth of work (it is I/O-bound, so
+# this flattens CPU spikes with little effect on scan time). GOMEMLIMIT is a soft
+# heap ceiling just under MemoryMax so the GC reclaims before the kernel would
+# OOM-kill; GOGC=50 keeps the peak heap small (a little more CPU for less memory).
+Environment=GOMAXPROCS=1
+Environment=GOMEMLIMIT=100MiB
+Environment=GOGC=50
+
+# --- Runtime identity ---
+# Runs as root (operator choice). Root can read every process and every file on
+# the host, so runtime detection and symbol reachability have full visibility
+# (useful with hidepid=2 /proc mounts or root-only 0700 binaries). The sandbox
+# directives below still apply. To run unprivileged with least privilege instead,
+# replace this block with:
+#   User=cobraagent
+#   Group=cobraagent
+#   AmbientCapabilities=CAP_SYS_PTRACE
+#   CapabilityBoundingSet=CAP_SYS_PTRACE
+User=root
+NoNewPrivileges=true
+
+# --- Hard resource caps (kernel-enforced via cgroups) — minimal-footprint ---
+# These are the real guardrails; the Go env above helps the agent stay under them.
+# To trade footprint for faster scans, comment these and uncomment the
+# "Standard profile" block below.
+CPUQuota=10%
+CPUWeight=20
+CPUSchedulingPolicy=idle
+MemoryHigh=96M
+MemoryMax=128M
+IOWeight=20
+IOSchedulingClass=idle
+Nice=15
+TasksMax=64
+
+# --- Standard profile (higher throughput) ---
+# To use it: comment the minimal caps above and the GOMEMLIMIT/GOGC lines, then
+# uncomment these.
+#CPUQuota=15%
+#MemoryHigh=192M
+#MemoryMax=256M
+#Environment=GOMEMLIMIT=200MiB
+
+# --- Sandboxing ---
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+StateDirectory=cobraagent
+ReadWritePaths=/var/lib/cobraagent
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+# Deny-by-default allowlist. @system-service already excludes privileged syscalls
+# while permitting what a Go runtime needs at startup (prlimit64, sched_*, etc.).
+# Do NOT subtract @resources — the Go runtime uses some of those and a hard
+# SIGSYS on startup would crash the agent. Blocked calls fail soft as EPERM.
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# NOTE: do NOT set ProtectProc=invisible/noaccess or ProcSubset=pid here —
+# the agent must be able to see every process on the host to do its job.
+
+[Install]
+WantedBy=multi-user.target

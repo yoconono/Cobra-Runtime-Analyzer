@@ -1,0 +1,33 @@
+{
+  "openssl": {
+    "CVE-2025-DEMO-0001": {
+      "description": "Example: use-after-free in TLS session handling. Installed version is older than the fix, so this should be flagged.",
+      "releases": {
+        "24.04":    { "status": "resolved", "fixed_version": "3.0.13-0ubuntu3.10", "urgency": "high" },
+        "bookworm": { "status": "resolved", "fixed_version": "3.0.11-1~deb12u2",    "urgency": "high" }
+      }
+    }
+  },
+  "coreutils": {
+    "CVE-2025-DEMO-0002": {
+      "description": "Example: fixed in an EARLIER version than what is installed. Must NOT be flagged (this is the backport-awareness check).",
+      "releases": {
+        "24.04": { "status": "resolved", "fixed_version": "9.4-3ubuntu6.1", "urgency": "medium" }
+      }
+    },
+    "CVE-2025-DEMO-0003": {
+      "description": "Example: not affected in this release (fixed_version 0). Must NOT be flagged.",
+      "releases": {
+        "24.04": { "status": "resolved", "fixed_version": "0", "urgency": "low" }
+      }
+    }
+  },
+  "dash": {
+    "CVE-2025-DEMO-0004": {
+      "description": "Example: open issue, no fix released yet. Should be flagged with 'no fix yet'.",
+      "releases": {
+        "24.04": { "status": "open", "fixed_version": "", "urgency": "low" }
+      }
+    }
+  }
+}

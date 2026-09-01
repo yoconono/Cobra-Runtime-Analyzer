@@ -1,0 +1,45 @@
+#!/bin/sh
+set -e
+case "$1" in
+  configure)
+    if ! getent passwd cobrart >/dev/null; then
+      adduser --system --group --no-create-home \
+              --home /var/lib/cobrart --shell /usr/sbin/nologin cobrart >/dev/null
+    fi
+    mkdir -p /var/lib/cobrart /etc/cobrart/tls
+    chown cobrart:cobrart /var/lib/cobrart
+    chmod 0750 /var/lib/cobrart
+
+    # Create the live config from the template on first install ONLY; never
+    # overwrite an existing one (upgrades keep your settings; no dpkg prompt
+    # because the live file is not a conffile). If upgrading from the old "cobra"
+    # server, migrate its config so settings (DSN, keys, TLS paths) carry over.
+    if [ ! -f /etc/cobrart/cobrart.conf ]; then
+      if [ -f /etc/cobra/cobra.conf ]; then
+        cp -a /etc/cobra/cobra.conf /etc/cobrart/cobrart.conf
+        echo "cobrart: migrated /etc/cobra/cobra.conf -> /etc/cobrart/cobrart.conf"
+      elif [ -f /etc/cobrart/cobrart.conf.template ]; then
+        cp /etc/cobrart/cobrart.conf.template /etc/cobrart/cobrart.conf
+      fi
+    fi
+
+    # /etc/cobrart holds credentials (DB DSN, dashboard password, session key,
+    # TLS keys) -> owned by the cobrart service user; directories 0770, files 0640.
+    chown -R cobrart:cobrart /etc/cobrart
+    find /etc/cobrart -type d -exec chmod 0770 {} +
+    find /etc/cobrart -type f -exec chmod 0640 {} +
+
+    if [ -d /run/systemd/system ]; then
+      systemctl daemon-reload || true
+      systemctl enable cobrart.service cobrart-refresh.timer || true
+    fi
+
+    echo "cobrart installed."
+    echo "  1. Edit /etc/cobrart/cobrart.conf (store/DSN, enroll_token, dash_pass, session_key, TLS paths)."
+    echo "     (A sample is available at /etc/cobrart/cobrart.conf.template.)"
+    echo "  2. Put a TLS cert/key at /etc/cobrart/tls/ (agents require HTTPS)."
+    echo "  3. If using a database: cobrart migrate --store <pg|mariadb> --dsn \"...\""
+    echo "  4. systemctl start cobrart   (and: systemctl start cobrart-refresh.timer)"
+    ;;
+esac
+exit 0
